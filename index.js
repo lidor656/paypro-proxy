@@ -1,4 +1,5 @@
 const express = require("express");
+
 const app = express();
 
 app.use((req, res, next) => {
@@ -17,26 +18,30 @@ app.get("/health", (req, res) => {
 
 app.all("/api/*", async (req, res) => {
   const apiPath = req.params[0];
-  const payproUrl = `https://api.payproglobal.com/api/2.3/${apiPath}`;
+  // הURL הנכון של PayPro!
+  const payproUrl = `https://store.payproglobal.com/api/${apiPath}`;
+  
+  console.log(`📡 Proxying ${req.method} to: ${payproUrl}`);
   
   try {
     const response = await fetch(payproUrl, {
       method: req.method,
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Basic ${Buffer.from(
-          `${process.env.PAYPRO_VENDOR_ID}:${process.env.PAYPRO_API_SECRET_KEY}`
-        ).toString("base64")}`
+        "Content-Type": "application/json"
       },
+      // PayPro מקבל את המפתחות בתוך ה-body, לא ב-headers
       body: req.method !== "GET" ? JSON.stringify(req.body) : undefined
     });
     
     const data = await response.json();
+    console.log(`✅ PayPro responded: ${response.status}`);
     res.status(response.status).json(data);
   } catch (error) {
+    console.error(`❌ Proxy error: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
 
 const port = process.env.PORT || 8080;
 app.listen(port, "0.0.0.0", () => console.log("listening", port));
+
