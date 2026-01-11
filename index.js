@@ -1,15 +1,6 @@
 const express = require("express");
 const app = express();
 
-app.get("/health", (req, res) => {
-  res.status(200).json({ ok: true, port: process.env.PORT, node: process.version });
-});
-
-const port = process.env.PORT || 8080;
-app.listen(port, "0.0.0.0", () => console.log("listening", port));
-const express = require("express");
-const app = express();
-
 // CORS
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -28,8 +19,10 @@ app.get("/health", (req, res) => {
 
 // PayPro API Proxy
 app.all("/api/*", async (req, res) => {
-  const apiPath = req.params[0]; // e.g., "Subscriptions/GetSubscriptionDetails"
+  const apiPath = req.params[0];
   const payproUrl = `https://api.payproglobal.com/api/2.3/${apiPath}`;
+  
+  console.log(`Proxying to: ${payproUrl}`);
   
   try {
     const response = await fetch(payproUrl, {
@@ -44,6 +37,7 @@ app.all("/api/*", async (req, res) => {
     });
     
     const data = await response.json();
+    console.log(`PayPro response status: ${response.status}`);
     res.status(response.status).json(data);
   } catch (error) {
     console.error("PayPro proxy error:", error);
@@ -52,4 +46,4 @@ app.all("/api/*", async (req, res) => {
 });
 
 const port = process.env.PORT || 8080;
-app.listen(port, "0.0.0.0", () => console.log("listening", port));
+app.listen(port, "0.0.0.0", () => console.log("Server listening on port", port));
